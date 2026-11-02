@@ -75,7 +75,7 @@ export const SAMPLE_STUDENTS_70 = REAL_PES_STUDENTS;
 
 export function generateSampleRosterCSV(): string {
   const header = "SRN,Student Name,Section\n";
-  const rows = REAL_PES_STUDENTS.map(s => `"${s.usn}","${s.fullName}","A"`).join("\n");
+  const rows = REAL_PES_STUDENTS.map(s => `"${s.usn}","${s.fullName}","D"`).join("\n");
   return header + rows;
 }
 

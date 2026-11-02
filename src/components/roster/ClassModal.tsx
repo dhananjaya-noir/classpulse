@@ -13,10 +13,10 @@ interface ClassModalProps {
 }
 
 export function ClassModal({ isOpen, onClose, onSave, initialData }: ClassModalProps) {
-  const [className, setClassName] = useState(initialData?.class_name || '');
+  const [className, setClassName] = useState(initialData?.class_name || 'PES University — 1st Semester');
   const [academicYear, setAcademicYear] = useState(initialData?.academic_year || '2026-2027');
-  const [semester, setSemester] = useState(initialData?.semester || 'Semester 5');
-  const [section, setSection] = useState(initialData?.section || 'A');
+  const [semester, setSemester] = useState(initialData?.semester || 'Semester 1');
+  const [section, setSection] = useState(initialData?.section || 'D');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 

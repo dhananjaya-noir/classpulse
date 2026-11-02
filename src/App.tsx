@@ -74,6 +74,12 @@ export function App() {
       // 3. Load Sessions
       const loadedSessions = await storage.getSessions(ownerId);
       setSessions(loadedSessions);
+      if (loadedSessions.length > 0) {
+        const inProgress = loadedSessions.find(s => s.status === 'in_progress');
+        if (inProgress) {
+          setActiveSession(inProgress);
+        }
+      }
 
       // 4. Load Enrollments for current class
       if (currentClassId) {

@@ -21,7 +21,7 @@ export function StudentModal({
 }: StudentModalProps) {
   const [usn, setUsn] = useState(initialData?.usn || '');
   const [fullName, setFullName] = useState(initialData?.full_name || '');
-  const [section, setSection] = useState('A');
+  const [section, setSection] = useState('D');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
