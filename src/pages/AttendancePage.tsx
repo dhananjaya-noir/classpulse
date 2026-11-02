@@ -13,6 +13,7 @@ import { calculateAttendanceStats, formatDate, formatTime } from '@/lib/utils';
 import { AttendanceStatsBar } from '@/components/attendance/AttendanceStatsBar';
 import { StudentAttendanceTable } from '@/components/attendance/StudentAttendanceTable';
 import { FinalizeModal } from '@/components/attendance/FinalizeModal';
+import { QuickAddStudentModal } from '@/components/attendance/QuickAddStudentModal';
 import { Button } from '@/components/common/Button';
 import { Badge } from '@/components/common/Badge';
 import { useToast } from '@/contexts/ToastContext';
@@ -29,7 +30,8 @@ import {
   Lock, 
   Unlock,
   ArrowUpDown,
-  Filter
+  Filter,
+  UserPlus
 } from 'lucide-react';
 import { downloadAbsenteesOnlySimple, exportAttendanceExcel } from '@/lib/export';
 
@@ -66,6 +68,42 @@ export function AttendancePage({
 
   // Modals
   const [isFinalizeModalOpen, setIsFinalizeModalOpen] = useState(false);
+  const [isAddStudentModalOpen, setIsAddStudentModalOpen] = useState(false);
+
+  // Quick Add Student directly to active session
+  const handleQuickAddStudent = async (data: {
+    usn: string;
+    fullName: string;
+    initialStatus: AttendanceStatus;
+  }) => {
+    const ownerId = user?.id || 'demo-faculty-001';
+    const newStudentId = crypto.randomUUID();
+    const newStudent = {
+      id: newStudentId,
+      owner_id: ownerId,
+      usn: data.usn,
+      full_name: data.fullName,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    await storage.saveStudents([newStudent], ownerId);
+    await storage.enrollStudents(session.class_id, [newStudentId], ownerId);
+
+    const newRow: StudentAttendanceRow = {
+      studentId: newStudentId,
+      usn: data.usn,
+      fullName: data.fullName,
+      status: data.initialStatus,
+      markedAt: new Date().toISOString(),
+      recordId: crypto.randomUUID(),
+    };
+
+    const updated = [...rows, newRow];
+    setRows(updated);
+    persistChanges(updated);
+    success('Student Added', `${data.fullName} (${data.usn}) added to session.`);
+  };
 
   // Load roster and attendance records
   useEffect(() => {
@@ -534,6 +572,16 @@ export function AttendancePage({
             >
               Reset All
             </Button>
+
+            {/* Quick Add Student Directly to Current Session */}
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setIsAddStudentModalOpen(true)}
+              leftIcon={<UserPlus className="w-3.5 h-3.5 text-teal-600" />}
+            >
+              Add Student
+            </Button>
           </div>
 
           <div className="flex items-center gap-2">
@@ -622,6 +670,14 @@ export function AttendancePage({
         onMarkRemainingAbsent={handleMarkRemainingAbsent}
         isFinalized={isFinalized}
         onReopenSession={isFinalized ? handleReopenSession : undefined}
+      />
+
+      {/* Quick Add Student Modal */}
+      <QuickAddStudentModal
+        isOpen={isAddStudentModalOpen}
+        onClose={() => setIsAddStudentModalOpen(false)}
+        onAddStudent={handleQuickAddStudent}
+        existingUsns={rows.map(r => r.usn)}
       />
     </div>
   );

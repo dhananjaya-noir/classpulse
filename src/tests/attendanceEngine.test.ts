@@ -61,8 +61,8 @@ describe('Phase 17 QA: Attendance Engine & Calculations', () => {
       markedAt: new Date().toISOString(),
     }));
 
-    // Action: Mark student 1MS23CS005 absent
-    const targetStudentId = '1MS23CS005';
+    // Action: Mark 5th student absent
+    const targetStudentId = SAMPLE_STUDENTS_70[4].usn;
     const originalStatus = rows.find(r => r.studentId === targetStudentId)!.status;
 
     const undoItem: AttendanceActionUndo = {

@@ -218,7 +218,7 @@ export function RosterImportModal({
               </button>
             </div>
 
-            {/* Quick 70-student test button */}
+            {/* Quick PES University 69-student roster loader */}
             <Button
               size="sm"
               variant="outline"
@@ -226,7 +226,7 @@ export function RosterImportModal({
               leftIcon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />}
               className="text-xs"
             >
-              Load 70-Student Demo
+              Load 69 PES Students
             </Button>
           </div>
         )}
