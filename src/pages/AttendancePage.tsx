@@ -34,6 +34,7 @@ import {
   UserPlus
 } from 'lucide-react';
 import { downloadAbsenteesOnlySimple, exportAttendanceExcel } from '@/lib/export';
+import { SAMPLE_STUDENTS_70 } from '@/lib/sampleData';
 
 interface AttendancePageProps {
   session: AttendanceSession;
@@ -103,6 +104,52 @@ export function AttendancePage({
     setRows(updated);
     persistChanges(updated);
     success('Student Added', `${data.fullName} (${data.usn}) added to session.`);
+  };
+
+  // One-click enroll existing PES students into newly created class
+  const handleEnrollExistingStudents = async () => {
+    setIsLoading(true);
+    try {
+      const ownerId = user?.id || 'demo-faculty-001';
+      let allStudents = await storage.getStudents(ownerId);
+      if (allStudents.length === 0) {
+        allStudents = await storage.saveStudents(
+          SAMPLE_STUDENTS_70.map(s => ({
+            id: crypto.randomUUID(),
+            owner_id: ownerId,
+            usn: s.usn,
+            full_name: s.fullName,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })),
+          ownerId
+        );
+      }
+
+      await storage.enrollStudents(
+        session.class_id,
+        allStudents.map(s => s.id),
+        ownerId
+      );
+
+      const nowIso = new Date().toISOString();
+      const newRows: StudentAttendanceRow[] = allStudents.map(s => ({
+        studentId: s.id,
+        usn: s.usn,
+        fullName: s.full_name,
+        status: 'unmarked',
+        markedAt: nowIso,
+        recordId: crypto.randomUUID(),
+      }));
+
+      newRows.sort((a, b) => a.usn.localeCompare(b.usn, undefined, { numeric: true }));
+      setRows(newRows);
+      success('Roster Populated', `Enrolled ${allStudents.length} students into ${session.class_name}.`);
+    } catch (err: any) {
+      error('Enrollment failed', err?.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Load roster and attendance records
@@ -657,6 +704,9 @@ export function AttendancePage({
         onStatusChange={handleStatusChange}
         disabled={isFinalized}
         totalEnrolledCount={rows.length}
+        onEnrollExisting={handleEnrollExistingStudents}
+        onAddStudent={() => setIsAddStudentModalOpen(true)}
+        classNameTitle={session.class_name}
       />
 
       {/* Finalize & Export Modal */}

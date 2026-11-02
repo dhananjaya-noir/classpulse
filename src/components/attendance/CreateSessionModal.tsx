@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '@/components/common/Modal';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/common/Input';
-import { Select } from '@/components/common/Select';
 import { ClassItem, Subject, AttendanceSession } from '@/types';
 import { getTodayDateString, getCurrentTimeString } from '@/lib/utils';
-import { AlertCircle, Calendar, Clock, Plus } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, Plus, BookOpen } from 'lucide-react';
 
 interface CreateSessionModalProps {
   isOpen: boolean;
@@ -42,27 +41,54 @@ export function CreateSessionModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Automatically keep classId & subjectId synchronized with available classes/subjects
+  useEffect(() => {
+    if (isOpen) {
+      const validClassId = (defaultClassId && classes.some(c => c.id === defaultClassId))
+        ? defaultClassId
+        : (classId && classes.some(c => c.id === classId) ? classId : (classes[0]?.id || ''));
+      setClassId(validClassId);
+
+      const validSubjectId = (subjectId && subjects.some(s => s.id === subjectId))
+        ? subjectId
+        : (subjects[0]?.id || '');
+      setSubjectId(validSubjectId);
+
+      setSessionDate(getTodayDateString());
+      setStartTime(getCurrentTimeString());
+      setError('');
+    }
+  }, [isOpen, classes, subjects, defaultClassId]);
+
+  const effectiveClassId = classId || defaultClassId || classes[0]?.id || '';
+  const effectiveSubjectId = subjectId || subjects[0]?.id || '';
+
   // Check duplicate session
   const isDuplicate = existingSessions.some(
-    s => s.class_id === classId && s.subject_id === subjectId && s.session_date === sessionDate
+    s => s.class_id === effectiveClassId && s.subject_id === effectiveSubjectId && s.session_date === sessionDate
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!classId) {
-      setError('Please select a class.');
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setError('');
+
+    const targetClassId = classId || defaultClassId || classes[0]?.id;
+    const targetSubjectId = subjectId || subjects[0]?.id;
+
+    if (!targetClassId) {
+      setError('Please select or create a class first.');
       return;
     }
-    if (!subjectId) {
-      setError('Please select or add a subject.');
+    if (!targetSubjectId) {
+      setError('Please select or add a subject first.');
       return;
     }
 
     setIsSubmitting(true);
     try {
       await onSessionCreated({
-        class_id: classId,
-        subject_id: subjectId,
+        class_id: targetClassId,
+        subject_id: targetSubjectId,
         session_date: sessionDate,
         start_time: startTime,
         remarks: remarks.trim() || undefined,
@@ -74,6 +100,8 @@ export function CreateSessionModal({
       setIsSubmitting(false);
     }
   };
+
+  const isFormReady = classes.length > 0 && subjects.length > 0;
 
   return (
     <Modal
@@ -91,8 +119,8 @@ export function CreateSessionModal({
             size="sm"
             variant="primary"
             isLoading={isSubmitting}
-            onClick={handleSubmit}
-            disabled={!classId || !subjectId}
+            onClick={() => handleSubmit()}
+            disabled={!isFormReady || isSubmitting}
           >
             Open Attendance Register
           </Button>
@@ -113,25 +141,31 @@ export function CreateSessionModal({
             <div>
               <p className="font-semibold">Notice: Existing Session Detected</p>
               <p className="opacity-90 mt-0.5">
-                An attendance session for this class and subject already exists on {sessionDate}. You can still create another period/hour or edit the existing one from Attendance History.
+                An attendance session for this class and subject already exists on {sessionDate}. You can still create another period or open the existing one from Attendance History.
               </p>
             </div>
           </div>
         )}
 
         {/* Class Selection */}
-        <Select
-          label="Class / Section"
-          value={classId}
-          onChange={e => setClassId(e.target.value)}
-          required
-        >
-          {classes.map(c => (
-            <option key={c.id} value={c.id}>
-              {c.class_name} ({c.academic_year} — Sec {c.section})
-            </option>
-          ))}
-        </Select>
+        <div className="space-y-1.5">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            Class / Section
+          </label>
+          <select
+            value={effectiveClassId}
+            onChange={e => setClassId(e.target.value)}
+            className="w-full h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
+            required
+          >
+            {classes.length === 0 && <option value="">No classes found — create a class first</option>}
+            {classes.map(c => (
+              <option key={c.id} value={c.id}>
+                {c.class_name} ({c.academic_year} — Sec {c.section})
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Subject Selection with Quick Add Action */}
         <div className="space-y-1.5">
@@ -149,15 +183,15 @@ export function CreateSessionModal({
             </button>
           </div>
           <select
-            value={subjectId}
+            value={effectiveSubjectId}
             onChange={e => setSubjectId(e.target.value)}
-            className="w-full h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-900 dark:text-slate-100"
+            className="w-full h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500"
             required
           >
             {subjects.length === 0 && <option value="">No subjects yet — click Add Subject</option>}
             {subjects.map(s => (
               <option key={s.id} value={s.id}>
-                {s.subject_name} ({s.subject_code})
+                {s.subject_name} {s.subject_code ? `(${s.subject_code})` : ''}
               </option>
             ))}
           </select>
@@ -187,7 +221,7 @@ export function CreateSessionModal({
         {/* Optional Remarks */}
         <Input
           label="Session Remarks (Optional)"
-          placeholder="e.g. Lab Session / Substitute Lecture / Unit Test"
+          placeholder="e.g. Lab Session / Unit Test / Substitute Lecture"
           value={remarks}
           onChange={e => setRemarks(e.target.value)}
         />

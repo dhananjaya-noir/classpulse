@@ -1,7 +1,8 @@
 import React from 'react';
 import { StudentAttendanceRow, AttendanceStatus } from '@/types';
 import { StatusPill } from '@/components/common/StatusPill';
-import { UserCheck, SearchX } from 'lucide-react';
+import { Button } from '@/components/common/Button';
+import { UserCheck, SearchX, Users, UserPlus, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StudentAttendanceTableProps {
@@ -9,6 +10,9 @@ interface StudentAttendanceTableProps {
   onStatusChange: (studentId: string, newStatus: AttendanceStatus) => void;
   disabled?: boolean;
   totalEnrolledCount: number;
+  onEnrollExisting?: () => void;
+  onAddStudent?: () => void;
+  classNameTitle?: string;
 }
 
 export function StudentAttendanceTable({
@@ -16,7 +20,53 @@ export function StudentAttendanceTable({
   onStatusChange,
   disabled = false,
   totalEnrolledCount,
+  onEnrollExisting,
+  onAddStudent,
+  classNameTitle = 'this class',
 }: StudentAttendanceTableProps) {
+  // Case A: 0 students enrolled in the class roster yet
+  if (totalEnrolledCount === 0) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 sm:p-12 text-center shadow-xs space-y-3">
+        <div className="w-12 h-12 rounded-full bg-teal-50 dark:bg-teal-950/40 text-teal-600 flex items-center justify-center mx-auto">
+          <Users className="w-6 h-6" />
+        </div>
+        <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+          No Students Enrolled in {classNameTitle}
+        </h4>
+        <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+          This is a newly created class without an active roster. You can enroll your 69 Section D students with 1 click or add students manually.
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+          {onEnrollExisting && (
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={onEnrollExisting}
+              leftIcon={<Sparkles className="w-3.5 h-3.5 text-amber-300" />}
+              className="font-semibold"
+            >
+              Enroll 69 Section D Students Now
+            </Button>
+          )}
+
+          {onAddStudent && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onAddStudent}
+              leftIcon={<UserPlus className="w-3.5 h-3.5" />}
+            >
+              + Add Student Manually
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Case B: Filter or search returns 0 matches
   if (rows.length === 0) {
     return (
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-12 text-center shadow-2xs">
@@ -41,7 +91,7 @@ export function StudentAttendanceTable({
           <thead className="sticky top-0 z-10 bg-slate-50/95 dark:bg-slate-800/95 backdrop-blur-xs border-b border-slate-200 dark:border-slate-700/80 text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
             <tr>
               <th className="py-2.5 px-3 w-12 text-center">#</th>
-              <th className="py-2.5 px-3 w-36">USN / Roll No</th>
+              <th className="py-2.5 px-3 w-36">SRN / Roll No</th>
               <th className="py-2.5 px-4">Student Name</th>
               <th className="py-2.5 px-4 text-right">Attendance Status</th>
             </tr>
@@ -69,7 +119,7 @@ export function StudentAttendanceTable({
                     {index + 1}
                   </td>
 
-                  {/* USN / Roll Number */}
+                  {/* SRN / Roll Number */}
                   <td className="py-2.5 px-3">
                     <span className="font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 tracking-wider">
                       {row.usn}
